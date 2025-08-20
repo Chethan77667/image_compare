@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Comparison Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .upload-area {
+            border: 3px dashed #ddd;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: #f8f9fa;
+        }
+
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f0f2ff;
+        }
+
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8f0ff;
+            transform: scale(1.02);
+        }
+
+        .upload-area h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        .upload-area p {
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .preview-container {
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .remove-btn {
+            position: absolute;
+            top: -10px;
+            right: -10px;
+            background: #ff4757;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            font-size: 16px;
+            display: none;
+        }
+
+        .compare-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: block;
+            margin: 0 auto;
+            font-weight: 600;
+        }
+
+        .compare-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .compare-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result-section {
+            margin-top: 40px;
+            text-align: center;
+            display: none;
+        }
+
+        .result-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+
+        .similarity-score {
+            font-size: 3rem;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .similarity-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+
+        .similarity-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff6b6b, #feca57, #48dbfb, #0abde3);
+            transition: width 1s ease;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .upload-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🖼️ Image Comparison Tool</h1>
+            <p>Upload two images and get their similarity score (0-100)</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section">
+                <div class="upload-area" id="uploadArea1">
+                    <div class="upload-icon">📁</div>
+                    <h3>First Image (Stored)</h3>
+                    <p>Drag & drop or click to upload the first image</p>
+                    <input type="file" class="file-input" id="fileInput1" accept="image/*">
+                    <div class="preview-container" id="preview1" style="display: none;">
+                        <img class="preview-image" id="previewImg1">
+                        <button class="remove-btn" onclick="removeImage(1)">×</button>
+                    </div>
+                </div>
+
+                <div class="upload-area" id="uploadArea2">
+                    <div class="upload-icon">📁</div>
+                    <h3>Second Image (Compare)</h3>
+                    <p>Drag & drop or click to upload the second image</p>
+                    <input type="file" class="file-input" id="fileInput2" accept="image/*">
+                    <div class="preview-container" id="preview2" style="display: none;">
+                        <img class="preview-image" id="previewImg2">
+                        <button class="remove-btn" onclick="removeImage(2)">×</button>
+                    </div>
+                </div>
+            </div>
+
+            <button class="compare-btn" id="compareBtn" onclick="compareImages()" disabled>
+                🔍 Compare Images
+            </button>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Analyzing images...</p>
+            </div>
+
+            <div class="status-message" id="statusMessage"></div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-card">
+                    <h2>Similarity Result</h2>
+                    <div class="similarity-score" id="similarityScore">0%</div>
+                    <div class="similarity-bar">
+                        <div class="similarity-fill" id="similarityFill" style="width: 0%"></div>
+                    </div>
+                    <p id="resultText">The images are being compared...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let storedImage = null;
+        let compareImage = null;
+
+        // Setup drag and drop for both upload areas
+        setupDragAndDrop('uploadArea1', 'fileInput1', 1);
+        setupDragAndDrop('uploadArea2', 'fileInput2', 2);
+
+        function setupDragAndDrop(areaId, inputId, imageNum) {
+            const area = document.getElementById(areaId);
+            const input = document.getElementById(inputId);
+
+            area.addEventListener('click', () => input.click());
+            area.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                area.classList.add('dragover');
+            });
+            area.addEventListener('dragleave', () => {
+                area.classList.remove('dragover');
+            });
+            area.addEventListener('drop', (e) => {
+                e.preventDefault();
+                area.classList.remove('dragover');
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleFile(files[0], imageNum);
+                }
+            });
+
+            input.addEventListener('change', (e) => {
+                if (e.target.files.length > 0) {
+                    handleFile(e.target.files[0], imageNum);
+                }
+            });
+        }
+
+        function handleFile(file, imageNum) {
+            if (!file.type.startsWith('image/')) {
+                showStatus('Please select an image file', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const preview = document.getElementById(`preview${imageNum}`);
+                const previewImg = document.getElementById(`previewImg${imageNum}`);
+                const removeBtn = preview.querySelector('.remove-btn');
+
+                previewImg.src = e.target.result;
+                preview.style.display = 'block';
+                removeBtn.style.display = 'block';
+
+                if (imageNum === 1) {
+                    storedImage = file;
+                    uploadToServer(file);
+                } else {
+                    compareImage = e.target.result;
+                }
+
+                updateCompareButton();
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function uploadToServer(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    showStatus('First image uploaded successfully!', 'success');
+                }
+            })
+            .catch(error => {
+                showStatus('Error uploading image: ' + error.message, 'error');
+            });
+        }
+
+        function compareImages() {
+            if (!storedImage || !compareImage) {
+                showStatus('Please upload both images first', 'error');
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('compareBtn').disabled = true;
+
+            fetch('/compare', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    imageData: compareImage
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('compareBtn').disabled = false;
+
+                if (data.error) {
+                    showStatus(data.error, 'error');
+                } else {
+                    showResult(data.similarity);
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('compareBtn').disabled = false;
+                showStatus('Error comparing images: ' + error.message, 'error');
+            });
+        }
+
+        function showResult(similarity) {
+            const resultSection = document.getElementById('resultSection');
+            const similarityScore = document.getElementById('similarityScore');
+            const similarityFill = document.getElementById('similarityFill');
+            const resultText = document.getElementById('resultText');
+
+            similarityScore.textContent = similarity + '%';
+            similarityFill.style.width = similarity + '%';
+
+            let text = '';
+            if (similarity >= 90) {
+                text = 'Excellent match! The images are very similar.';
+            } else if (similarity >= 70) {
+                text = 'Good match! The images have significant similarities.';
+            } else if (similarity >= 50) {
+                text = 'Moderate match. The images share some similarities.';
+            } else if (similarity >= 30) {
+                text = 'Low match. The images have few similarities.';
+            } else {
+                text = 'Very low match. The images are quite different.';
+            }
+
+            resultText.textContent = text;
+            resultSection.style.display = 'block';
+        }
+
+        function removeImage(imageNum) {
+            const preview = document.getElementById(`preview${imageNum}`);
+            const input = document.getElementById(`fileInput${imageNum}`);
+            
+            preview.style.display = 'none';
+            input.value = '';
+
+            if (imageNum === 1) {
+                storedImage = null;
+            } else {
+                compareImage = null;
+            }
+
+            updateCompareButton();
+        }
+
+        function updateCompareButton() {
+            const compareBtn = document.getElementById('compareBtn');
+            compareBtn.disabled = !(storedImage && compareImage);
+        }
+
+        function showStatus(message, type) {
+            const statusDiv = document.getElementById('statusMessage');
+            statusDiv.textContent = message;
+            statusDiv.className = `status-message status-${type}`;
+            statusDiv.style.display = 'block';
+
+            setTimeout(() => {
+                statusDiv.style.display = 'none';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
